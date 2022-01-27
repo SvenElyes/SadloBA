@@ -9,3 +9,8 @@ Erstes Ziel ist mit paraview vertraut zu werden. Dafuer ein kleines Plugin(?) sc
 
 Lagrangian descriptor: https://www.sciencedirect.com/science/article/pii/S1007570413002037
 How to write a Plugin: https://github.com/CGAL/cgal-paraview-plugins
+Example of vectorfields : https://github.com/champsproject/ldds/blob/develop/ldds/testing_scripts.py
+
+
+# Questions
+What is seed/seeding
