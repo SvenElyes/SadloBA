@@ -1,4 +1,5 @@
 import numpy as np
+import vectorfield
 
 """So we have a vectorfield.
 We can visualize it as a Matrix. If we want the vector at point (x,y), we just
@@ -44,50 +45,47 @@ At the end we have a Skalarfield, with each of the pathlengths (the last row of 
 
 
 
+27. Jan:
+
+We have to define the vectorfield different. Because our input data wont be the vectors describing a Matrix, but rather just data points, we have to describe our
+Vectorfield different. This vectorfield class will also come with an Interpolator function, which will give us the values between the datapoints provided.
+This vectorfield will have following parameters. 4 Adjacent datapoints (in a Square Form ) will define a cell. 
+Origin : Describing the point, which will be (0,0) in our Vectorfield
+Spacing:
+Boundary:
+Dimensions : We will not use this at first, as we will use a 2D Vectorfield 
+data : Our datapoints which will be used to interpolate.
+The Interpolator function will have the ability to to the do_step function: It will give us the approximate position of x after experiecing the vectorfield for dt time
+
+
+Our result is a Scalar Field, which will have the length of each of the points we start with. We update it after each step
+
+
+
 TOdo : Vectorfield, time dependent
        Bounding Box
+       Warum mit cells und local indexen?
        """
 
 
-class Vectorfield:
-    # just a 2x2 Matrix for the beginning.
-    # introduce ways to map to Physical Space and back
-    def __init__(self, u, v):
+def calculate_Langrian_descriptor(
+    vectorfield, seeds, tau, start_time, end_time, time_step
+):
+    # seeds_rows, seeds_cols = seeds.shape[0], seeds.shape[1]
+    number_of_steps = int((end_time - start_time) / time_step)
+    # saves the position of all the points, after each step dt
+    scalar_field = np.zeros((seeds.shape[0], 1))
+    print(seeds)
+    print("seedshape:", seeds.shape)
+    print("Number of steps:", number_of_steps)
+    for current_step in range(1, number_of_steps):
+        for idx, point in enumerate(seeds):
 
-        self.v = np.columnstack(u, v)
-        return v
+            newpoint, length = vectorfield.do_step(point, time_step)
 
-    def multiply(self,x):
-        return self.v.multiply(x)
-
-    def maptoPhysical()
-        pass
-def do_step(vectorfield,x,dt):
-    #using Runge Kutta 4 to get the new point
-    #use L2 Norm to get the length of the trajectory from t0 to t1.
-    return newpoint, length
-
-grid_coordinates = [(-1, 1, 100), (-1, 1, 100)]  # [(xmin,xmax,Nx),(ymin,ymax,Ny)]
-
-def calculate_Langrian_descriptor(vectorfield, grid, tau, start_time, end_time, time_step):
-
-    _,_,Nx = grid[0]
-    _,_,Ny = grid[1]
-    number_of_steps =int ( (end_time-start_time) / time_step )
-    position_matrix = np.zeros((Nx,Ny,number_of_steps))
-    length_matrix = np.zeros((Nx,Ny,number_of_steps))
-    position_matrix [:,:,0]= grid
-    length_matrix [:,:0] = 0 #arclength is 0
-    for current_step in range (1,number_of_steps):
-        for point in position_matrix[:,:(current_step-1)]
-            newpoint,length = do_step(vector_field,point,time_step)
-            position_matrix[x,y,currentstep] = newpoint
-            length_matrix [x,y,currentstep] = length + length_matrix[x,y,current_step-1]
-    
-    result = length_matrix[:,:number_of_steps] #the last line has the length of all original grid points
-    return result
-
-
-
-
-
+            seeds[idx] = newpoint
+            scalar_field[idx] = length + scalar_field[idx]
+    print(scalar_field)
+    for p, s in zip(seeds, scalar_field):
+        print("point:", p, "sclara", s)
+    return scalar_field

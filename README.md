@@ -11,6 +11,13 @@ Lagrangian descriptor: https://www.sciencedirect.com/science/article/pii/S100757
 How to write a Plugin: https://github.com/CGAL/cgal-paraview-plugins
 Example of vectorfields : https://github.com/champsproject/ldds/blob/develop/ldds/testing_scripts.py
 
+# Strategy
+1. Programming a LD in python.
+2. Try implementing it in paraview
+3. Try programming in C++
 
 # Questions
-What is seed/seeding
+What is a standalone? https://vcgitlab.iwr.uni-heidelberg.de/vcg-public/paraview-vtk-template
+
+
+ It's pretty late, but looping on numpy array is usually expensive because python interpreter and numpy code have to exchange the data every time the loop is executed
