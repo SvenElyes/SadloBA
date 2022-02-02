@@ -1,5 +1,5 @@
 import numpy as np
-import vectorfield
+
 
 """So we have a vectorfield.
 We can visualize it as a Matrix. If we want the vector at point (x,y), we just
@@ -75,6 +75,7 @@ def calculate_Langrian_descriptor(
     number_of_steps = int((end_time - start_time) / time_step)
     # saves the position of all the points, after each step dt
     scalar_field = np.zeros((seeds.shape[0], 1))
+    original_seeds = seeds.copy()
     print(seeds)
     print("seedshape:", seeds.shape)
     print("Number of steps:", number_of_steps)
@@ -86,6 +87,6 @@ def calculate_Langrian_descriptor(
             seeds[idx] = newpoint
             scalar_field[idx] = length + scalar_field[idx]
     print(scalar_field)
-    for p, s in zip(seeds, scalar_field):
-        print("point:", p, "sclara", s)
-    return scalar_field
+    for o, p, s in zip(original_seeds, seeds, scalar_field):
+        print("original point:", o, "point:", p, "sclara", s)
+    return scalar_field, seeds

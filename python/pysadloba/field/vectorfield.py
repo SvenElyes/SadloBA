@@ -25,19 +25,19 @@ class Vectorfield:
         x = np.linspace(origin[0], grid_max[0], dimensions[0])
         y = np.linspace(origin[1], grid_max[1], dimensions[1])
         grid_coords = [x, y]
-        # print("grid_coords:", grid_coords)
+        print("grid_coords:", grid_coords)
         # print("data.shape", data.shape)
         self.grid_coords = grid_coords
         u = data.reshape(list(dimensions) + [dim_v], order="F")
 
         # print(u.shape)
-        self.vectorfield = RegularGridInterpolator(
+        self.interpolator = RegularGridInterpolator(
             grid_coords, u, bounds_error=False, fill_value=np.nan
         )
 
     def interpolate(self, point):
         # point has to be shape (x,y)
-        result_skalar = self.vectorfield(point)
+        result_skalar = self.interpolator(point)
         return result_skalar
 
     def get_data(self):
@@ -58,10 +58,10 @@ class Vectorfield:
 
     def do_step(self, x_old, dt):
 
-        k1 = self.vectorfield(x_old)
-        k2 = self.vectorfield(x_old + k1 * dt / 2.0)
-        k3 = self.vectorfield(x_old + k2 * dt / 2.0)
-        k4 = self.vectorfield(x_old + k3 * dt)
+        k1 = self.interpolator(x_old)
+        k2 = self.interpolator(x_old + k1 * dt / 2.0)
+        k3 = self.interpolator(x_old + k2 * dt / 2.0)
+        k4 = self.interpolator(x_old + k3 * dt)
         integral = k1 / 6.0 + k2 / 3.0 + k3 / 3.0 + k4 / 6.0
 
         x_new = x_old + dt * integral
