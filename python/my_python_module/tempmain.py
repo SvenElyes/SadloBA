@@ -1,8 +1,8 @@
 """A file designed to test the LD calcualtion before trying to plug it into paraviews pipeline/framework
 
 """
-from field.vectorfield import Vectorfield
-from lagrangian_descriptor.calculateLD import calculate_Langrian_descriptor
+from vectorfield import Vectorfield
+from calculateLD import calculate_Langrian_descriptor
 import numpy as np
 import scipy.interpolate as spint
 
