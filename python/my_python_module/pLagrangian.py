@@ -1,3 +1,4 @@
+from unittest import result
 from vtkmodules.util.vtkAlgorithm import VTKPythonAlgorithmBase
 from vtkmodules.vtkCommonDataModel import (
     vtkDataSet,
@@ -27,11 +28,11 @@ What does request data object/ Request INformation do?"""
 @smproxy.filter(label="Lagrangian Descriptor")
 # @smhint_replace_input(0)
 @smproperty.input(name="InputSeeds", label="Seeding Points", port_index=1)
-@smdomain.datatype(dataTypes=["vtkPolyData"])
+@smdomain.datatype(dataTypes=["vtkDataSet"])
 @smproperty.input(name="Input", label="Vector Field", port_index=0)
 # @smdomain_inputarray("input_array")
 # @smdomain_inputarray("input_array2", optional="1")
-@smdomain.datatype(dataTypes=["vtkDataSet"])
+@smdomain.datatype(dataTypes=["vtkImageData"])
 class lagragianDescriptor(VTKPythonAlgorithmBase):
     def __init__(self):
         self._array_field = 0
@@ -42,10 +43,10 @@ class lagragianDescriptor(VTKPythonAlgorithmBase):
         self._array_name = self._array_field = None
         VTKPythonAlgorithmBase.__init__(
             self,
-            nInputPorts=1,
+            nInputPorts=2,
             nOutputPorts=1,
-            inputType="vtkImageData",
-            outputType="vtkImageData",
+            inputType="vtkDataSet",
+            outputType="vtkPolyData",
         )
 
     @smproperty.doublevector(name="T", default_values=10.0)
@@ -53,6 +54,7 @@ class lagragianDescriptor(VTKPythonAlgorithmBase):
         self.tau = tau
         self.Modified()
 
+    @smproperty_inputarray("Vectors", attribute_type="Vectors")
     def SetInputArrayToProcess(self, idx, port, connection, field, name):
         self._array_field = field
         self._array_name = name
@@ -78,10 +80,17 @@ class lagragianDescriptor(VTKPythonAlgorithmBase):
             vtkPolyData.GetData(inInfo[1], 0)
         )  # holds the points in the vectorfield, which we want to analyze and get their pathlenght
         output = dsa.WrapDataObject(
-            vtkImageData.GetData(outInfo, 0)
+            vtkPolyData.GetData(outInfo, 0)
         )  # holds the length of each of our points from port 1
+        print("array jggnkfield:", self._array_field, self._array_name)
 
-        data = util.get_array(inp, self._array_field, self._array_name)
+        if inp.IsA("vtkImageData"):
+            dimensions = list(inp.VTKObject.GetDimensions())
+            spacing = list(inp.VTKObject.GetSpacing())
+            datafield = inp.PointData
+
+        datafield = inp.PointData
+        array = np.array(datafield[self._array_name])
 
         if not inp or not output:
             return 0
@@ -94,22 +103,21 @@ class lagragianDescriptor(VTKPythonAlgorithmBase):
         origin = np.array(origin)
         spacing = np.array(spacing)
         boundary = None  # TODO
-        vectorfield = Vectorfield(origin, spacing, boundary, data)
+        print("spacing ", spacing, "dimensions", dimensions, "data shape", array.shape)
+        vectorfield = Vectorfield(origin, spacing, boundary, dimensions, array)
 
         seeds = inp_pd.Points
-        seeds = seeds[:, :2]
+        num_seeds = seeds.shape[0]
+        print("Seed shape :", seeds.shape, "Seeds:", seeds)
 
-        output.ShallowCopy(inp.VTKObject)
-        results = calculate_Langrian_descriptor(
+        # output.ShallowCopy(inp.VTKObject)
+        results_scalarfield, results_seeds = calculate_Langrian_descriptor(
             vectorfield, seeds, self.tau, self.start_time, self.end_time, self.time_step
         )
-
-        output.SetDimensions(dimensions)
-        output.SetOrigin(origin)
-        output.SetSpacing(spacing)
-        output.PointData.append(results, self._array_name)
-        output.GetPointData().SetActiveScalars(self._array_name)
-
-        # What does the get_array function do exactly?
-
-        # DO THE STUFF HERE
+        # results_seeds = np.concatenate(results_seeds, [2, 3, 4])
+        print("results seeds:", results_seeds, "with shape:", results_seeds.shape)
+        print("results sf:", results_scalarfield, "with shape:", results_seeds.shape)
+        output.PointData.append(results_scalarfield, "result_scalarfield")
+        output.PointData.append(results_seeds, "result_seeds")
+        # output.BuildCells()
+        return 1

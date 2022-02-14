@@ -1,4 +1,4 @@
-__all__ = ['calculate_Langrian_descriptorpt']
+__all__ = ["calculate_Langrian_descriptorpt"]
 import numpy as np
 
 
@@ -77,12 +77,9 @@ def calculate_Langrian_descriptor(
     # saves the position of all the points, after each step dt
     scalar_field = np.zeros((seeds.shape[0], 1))
     original_seeds = seeds.copy()
-    print(seeds)
-    print("seedshape:", seeds.shape)
-    print("Number of steps:", number_of_steps)
     for current_step in range(1, number_of_steps):
         for idx, point in enumerate(seeds):
-
+            print("Stepping through time with point \n ", point)
             newpoint, length = vectorfield.do_step(point, time_step)
 
             seeds[idx] = newpoint

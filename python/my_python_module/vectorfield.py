@@ -20,24 +20,36 @@ class Vectorfield:
         print("len datashape:", len(data.shape))
         """
         dim_v = data.shape[1] if len(data.shape) > 1 else 1
-        # print("dim_v:", dim_v)
+        print("dim_v:", dim_v)
         grid_max = origin + (dimensions - 1) * spacing
+        print("grid_max:", grid_max)
         x = np.linspace(origin[0], grid_max[0], dimensions[0])
         y = np.linspace(origin[1], grid_max[1], dimensions[1])
-        grid_coords = [x, y]
-        print("grid_coords:", grid_coords)
-        # print("data.shape", data.shape)
+        z = np.linspace(origin[2], grid_max[2], dimensions[2])
+        grid_coords = [x, y, z]
         self.grid_coords = grid_coords
         u = data.reshape(list(dimensions) + [dim_v], order="F")
-
-        # print(u.shape)
+        print(
+            "Building interpolator with following data \n grid coords:\n",
+            grid_coords,
+            "which has following type ",
+            type(grid_coords),
+            "and length",
+            len(grid_coords),
+            "\n data shape:\n",
+            data.shape,
+            "and u shape",
+            u.shape,
+        )
         self.interpolator = RegularGridInterpolator(
             grid_coords, u, bounds_error=False, fill_value=np.nan
         )
 
     def interpolate(self, point):
-        # point has to be shape (x,y)
+        # point has to be shape (x,y,z)
+        print("\n Interpolate has been called, with following point :", point)
         result_skalar = self.interpolator(point)
+        print("and the result was: ", result_skalar)
         return result_skalar
 
     def get_data(self):
@@ -57,8 +69,14 @@ class Vectorfield:
         # check if value is inside defined boundary
 
     def do_step(self, x_old, dt):
-
+        print(
+            "Do_STEP with following parameters. \n Start point x_old:",
+            x_old,
+            "dt:\n",
+            dt,
+        )
         k1 = self.interpolator(x_old)
+        print("k1 shape ", k1.shape)
         k2 = self.interpolator(x_old + k1 * dt / 2.0)
         k3 = self.interpolator(x_old + k2 * dt / 2.0)
         k4 = self.interpolator(x_old + k3 * dt)
