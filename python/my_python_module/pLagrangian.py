@@ -82,7 +82,7 @@ class lagragianDescriptor(VTKPythonAlgorithmBase):
         output = dsa.WrapDataObject(
             vtkPolyData.GetData(outInfo, 0)
         )  # holds the length of each of our points from port 1
-        print("array jggnkfield:", self._array_field, self._array_name)
+        print("array :", self._array_field, self._array_name)
 
         if inp.IsA("vtkImageData"):
             dimensions = list(inp.VTKObject.GetDimensions())
@@ -90,6 +90,9 @@ class lagragianDescriptor(VTKPythonAlgorithmBase):
             datafield = inp.PointData
 
         datafield = inp.PointData
+        print("keys: ", datafield.keys())
+        print(datafield["vector_field"])
+        # print(datafield, type(datafield), "datafield")
         array = np.array(datafield[self._array_name])
 
         if not inp or not output:

@@ -1,4 +1,4 @@
-__all__ = ["Model2DDoubleGyre"]
+__all__ = ["Model3DDoubleGyre"]
 
 import vtk
 from vtkmodules.util.vtkAlgorithm import VTKPythonAlgorithmBase
@@ -15,11 +15,11 @@ from vtkmodules.numpy_interface import dataset_adapter as dsa
 from .paraview_util import *
 
 
-@smproxy.source(label="Model 2D Double Gyre")
-class Model2DDoubleGyre(VTKPythonAlgorithmBase):
+@smproxy.source(label="Model 3D Double Gyre")
+class Model3DDoubleGyre(VTKPythonAlgorithmBase):
     def __init__(self):
         self._dimensions = [100, 50, 100]
-        self._extent = [0.0, 2.0, 0.0, 1.0, 0.0, 10.0]
+        self._extent = [0.0, 2.0, 0.0, 1.0, 0.0, 1.0]
         VTKPythonAlgorithmBase.__init__(self, nInputPorts=0, nOutputPorts=1)
 
     def FillOutputPortInformation(self, port, info):
@@ -53,7 +53,7 @@ class Model2DDoubleGyre(VTKPythonAlgorithmBase):
 
         return 1
 
-    def double_gyre(data):
+    def double_gyre(self, data):
         """gets data and returns the vectors for the vector field,
         https://shaddenlab.berkeley.edu/uploads/LCS-tutorial/FTLE-interp.html#Eq13
 
@@ -70,7 +70,10 @@ class Model2DDoubleGyre(VTKPythonAlgorithmBase):
         x, y = data[0], data[1]
         u = np.sin(np.pi * x) * np.cos(np.pi * y) * np.pi
         v = -1 * np.pi * np.cos(np.pi * x) * np.sin(np.pi * y)
-        return np.stack([u, v], axis=-1)
+        w = np.zeros(x.shape)
+        result = np.stack([u, v, w], axis=-1)
+        result = result.reshape(-1, 3)
+        return result
 
     def RequestData(self, request, inInfo, outInfo):
         # make grid, calcualte the vectors at the grid postion
@@ -84,18 +87,27 @@ class Model2DDoubleGyre(VTKPythonAlgorithmBase):
             )
             for i in range(len(self._dimensions))
         )
+
         grid = np.meshgrid(*coords, indexing="ij")
         origin = np.array([a[0] for a in coords])
 
         # calculate Doouble Gyre
-        results = self.double_gyre(*grid)
+        results = self.double_gyre(grid)
         # image data output
 
-        image_spacing = [coords[i][1] - coords[i][0] for i in range(self._dimensions)]
+        image_spacing = [
+            coords[i][1] - coords[i][0] for i in range(len(self._dimensions))
+        ]
+        print("result shape:", results.shape)
+        print("dimensions:", self._dimensions)
+        print("spacing: ", image_spacing)
+        print("origin:", origin)
 
         image_output.SetDimensions(self._dimensions)
         image_output.SetOrigin(origin)
         image_output.SetSpacing(image_spacing)
+        # https://vcwiki.iwr.uni-heidelberg.de/viscompwiki/doku.php?id=knowledgebase:vtk-knowledge:vtkimagedata_numpy
+        # but we already did that in the double_gyre function!
         image_output.PointData.append(results, "vector_field")
 
         return 1
