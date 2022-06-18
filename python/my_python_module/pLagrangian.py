@@ -14,7 +14,7 @@ import numpy as np
 from .paraview_util import *
 from .vectorfield import Vectorfield
 from .calculateLD import calculate_Langrian_descriptor
-
+from .util_arrays import get_array, find_array, field_from_association
 
 """
 what does the @smproperty_inputarrat do exactly
@@ -28,7 +28,7 @@ What does request data object/ Request INformation do?"""
 @smproxy.filter(label="Lagrangian Descriptor")
 # @smhint_replace_input(0)
 @smproperty.input(name="InputSeeds", label="Seeding Points", port_index=1)
-@smdomain.datatype(dataTypes=["vtkDataSet"])
+@smdomain.datatype(dataTypes=["vtkPolyData"])
 @smproperty.input(name="Input", label="Vector Field", port_index=0)
 # @smdomain_inputarray("input_array")
 # @smdomain_inputarray("input_array2", optional="1")
@@ -82,8 +82,10 @@ class lagragianDescriptor(VTKPythonAlgorithmBase):
         output = dsa.WrapDataObject(
             vtkPolyData.GetData(outInfo, 0)
         )  # holds the length of each of our points from port 1
-        print("array :", self._array_field, self._array_name)
 
+        print("Info in filter ---------------------------------")
+        print("array :", self._array_field, self._array_name)
+        """"
         if inp.IsA("vtkImageData"):
             dimensions = list(inp.VTKObject.GetDimensions())
             spacing = list(inp.VTKObject.GetSpacing())
@@ -107,9 +109,33 @@ class lagragianDescriptor(VTKPythonAlgorithmBase):
         spacing = np.array(spacing)
         boundary = None  # TODO
         print("spacing ", spacing, "dimensions", dimensions, "data shape", array.shape)
-        vectorfield = Vectorfield(origin, spacing, boundary, dimensions, array)
+        """
+        inp = dsa.WrapDataObject(inp)
+        array = get_array(inp, self._array_field, self._array_name)
+        if array is None:
+            print("no input data")
 
-        seeds = inp_pd.Points
+        array = np.copy(array)
+
+        if inp.IsA("vtkImageData"):
+            dimensions = list(inp.VTKObject.GetDimensions())
+            spacing = list(inp.VTKObject.GetSpacing())
+            origin = list(inp.GetBounds()[::2])
+            boundary = None
+        print(
+            "spacing ",
+            spacing,
+            "dimensions",
+            dimensions,
+            "data shape",
+            array.shape,
+            "origin",
+            origin,
+        )
+        vectorfield = Vectorfield(origin, spacing, boundary, dimensions, array)
+        print("inp_pd,", inp_pd)
+        print("keys", inp_pd.PointData.keys())
+        seeds = inp_pd.PointData["Coordinates"]
         num_seeds = seeds.shape[0]
         print("Seed shape :", seeds.shape, "Seeds:", seeds)
 

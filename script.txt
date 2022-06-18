@@ -1,0 +1,54 @@
+This is a script to hold and retain ideas.
+https://shaddenlab.berkeley.edu/uploads/LCS-tutorial/computation.html
+
+
+Flow Map: Maps each point, to its future position it will be on. 
+That is, we must compute the position x(t  + T ) =  φt+T (x)   of each point when advected by the flow for a amount of time T. To obtain this, each point is advected with a 4th-order Runge-Kutta-Fehlberg integration algorithm using the provided velocity data.
+
+After we have the flow map, we need to know the gradients. As we just have discrete data sets, we need to use finite differencing. For example central differencing.
+
+ left multiply this matrix by its transpose to obtain Δ   
+
+Hierbei stellt λmax(4) den maximalen Eigenwert von 4 dar. 4 ist der rechte Cauchy-Green Verzerrungstensor der Jakobimatrix ∇χ und wird nach der Vorschrift
+4 = ∇χ
+T
+∗ ∇χ (3.2)
+ermittelt. Cauchy-Green Verzerrungstensoren liefern Auskunft über Verzerrungen und Deformationen
+und werden in [Ihl11] behandelt. Es ist zu beachten, dass 4 sowie ∇χ von ~x, T0 und ∆t abhängig
+sind. Der Übersichtlichkeit und Lesbarkeit wegen wird hier jedoch die verkürzte Notation 4 statt
+4(x; T0; ∆t) verwendet.
+Die Jakobi-Matrix ∇χ für den 2-dimensionalen Fall setzt sich aus den partiellen Ableitungen der Einträge der flow map ξ
+T0+∆t
+T0
+zusammen. 
+Then we simply compute the largest eigenvalue of Δ   (which is rather trivial for 2 × 2   matrices) and plug into the formula for the FTLE given by Eq.(50).
+
+
+Recall that the FTLE is given by
+                       
+  T              1
+σ t  (x)   =   ----- ln   srqt(  λmax(    Δ)    )
+               ∣T  ∣
+
+
+
+So our data is in form of this simulation data, with the following attributes.
+
+Coordinates    Velocity      Mass    snapshotnumber 
+
+
+Are the snapshots with same time intervall between eachother?
+
+Do we try to build a vector field out of this information? Time Dependent?
+
+What is the Grid Dimension?
+
+Where is the paper?
+
+We can just build the vectorfield by looking how each particle (identified by particle ID ) moves from one time step to other?
+
+But how do we keep grid dimensions? Do we need them? Preferbly so or?
+
+Also we are in 3D? Does this mean we have problems involving complexity.
+
+What is the relationship between ParticleChilds? Can a particle dissolve into multiple? Properly

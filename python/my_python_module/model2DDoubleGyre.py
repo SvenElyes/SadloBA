@@ -78,7 +78,6 @@ class Model3DDoubleGyre(VTKPythonAlgorithmBase):
     def RequestData(self, request, inInfo, outInfo):
         # make grid, calcualte the vectors at the grid postion
         executive = self.GetExecutive()
-        out_info = outInfo.GetInformationObject(0)
         image_output = dsa.WrapDataObject(vtkImageData.GetData(outInfo, 0))
 
         coords = list(
@@ -91,23 +90,28 @@ class Model3DDoubleGyre(VTKPythonAlgorithmBase):
         grid = np.meshgrid(*coords, indexing="ij")
         origin = np.array([a[0] for a in coords])
 
+        origin = [1, 3, 4]
         # calculate Doouble Gyre
-        results = self.double_gyre(grid)
+        vector_field = self.double_gyre(grid)
         # image data output
 
         image_spacing = [
             coords[i][1] - coords[i][0] for i in range(len(self._dimensions))
         ]
-        print("result shape:", results.shape)
+        print("Info from MODEL2DDOUBLEGYRE ---------------------------------")
+        print("vectorfield shape shape:", vector_field.shape)
         print("dimensions:", self._dimensions)
         print("spacing: ", image_spacing)
         print("origin:", origin)
+        print("End of MODEL2DDOUBLEGYRE---------------------------------------")
 
         image_output.SetDimensions(self._dimensions)
         image_output.SetOrigin(origin)
         image_output.SetSpacing(image_spacing)
         # https://vcwiki.iwr.uni-heidelberg.de/viscompwiki/doku.php?id=knowledgebase:vtk-knowledge:vtkimagedata_numpy
         # but we already did that in the double_gyre function!
-        image_output.PointData.append(results, "vector_field")
+        image_output = dsa.WrapDataObject(image_output)
+        image_output.PointData.append(vector_field, "vector_field")
+        image_output.VTKObject.GetPointData().SetActiveScalars("vector_field")
 
         return 1
