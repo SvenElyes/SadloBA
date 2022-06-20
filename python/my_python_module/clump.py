@@ -37,7 +37,7 @@ class clump(VTKPythonAlgorithmBase):
         self._point_arrays = []
         self._time_steps = None
         self._current_time_index = 0
-
+        self.number_of_points = None
         VTKPythonAlgorithmBase.__init__(
             self,
             nInputPorts=1,
@@ -46,9 +46,14 @@ class clump(VTKPythonAlgorithmBase):
             outputType="vtkUnstructuredGrid",
         )
 
-    @smproperty.doublevector(name="Number of neighbors", default_values=10)
+    @smproperty.intvector(name="Number of neighbors", default_values=10)
     def SetNeighborsnumber(self, neighborsnumber):
         self._neighborsnumber = neighborsnumber
+        self.Modified()
+
+    @smproperty.intvector(name="Points to check (STEPSIZE)", default_values=100)
+    def SetPointstocheck(self, ptc):
+        self.number_of_points = ptc
         self.Modified()
 
     def RequestDataObject(self, request, inInfo, outInfo):
@@ -106,8 +111,8 @@ class clump(VTKPythonAlgorithmBase):
         output = dsa.WrapDataObject(vtkUnstructuredGrid.GetData(outInfo, 0))
 
         points_to_check = np.arange(
-            0, 99999, 1000, dtype=int
-        )  # the pointIDs we want to analyze. #TODO make this input variable, so the user can specify how many and which points are analyzed
+            0, 99999, self.number_of_points, dtype=int
+        )  # the pointIDs we want to analyze. #TODO make the maximum of points dependent of numb erof points in input
 
         # We need to create a Vtk Points instance to build the KDTree from our coordiates
 
@@ -120,7 +125,7 @@ class clump(VTKPythonAlgorithmBase):
 
         # Build Neigbors array
         neighbors = vtk.vtkIntArray()
-        neighbors.SetNumberOfComponents(10)
+        neighbors.SetNumberOfComponents(self._neighborsnumber)
         neighbors.SetNumberOfTuples(inp.GetNumberOfPoints())
         neighbors.SetName("neighbors")
 
@@ -143,11 +148,14 @@ class clump(VTKPythonAlgorithmBase):
                 kDTree.FindClosestNPoints(
                     int(self._neighborsnumber), point, neighborIds
                 )  # Does this also give us the point itself back?
+
                 npneighbors = np.array(
                     [neighborIds.GetId(i) for i in range(neighborIds.GetNumberOfIds())]
                 )
+
                 intersection = [i for i in npneighbors if i in points_to_check]
                 if pointId not in npneighbors:
+
                     npneighbors.append(pointId)
 
                 neighbor_coord = vtk.vtkPoints()

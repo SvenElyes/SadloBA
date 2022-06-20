@@ -4,6 +4,8 @@ from operator import ne
 from tempfile import tempdir
 from unittest import result
 import math
+import os
+import os.path
 from vtkmodules.util.vtkAlgorithm import VTKPythonAlgorithmBase
 from vtkmodules.vtkCommonDataModel import (
     vtkDataSet,
@@ -42,6 +44,7 @@ class ftleapprox(VTKPythonAlgorithmBase):
         self._time_steps = None
         self._current_time_index = 0
         self.intervall_timesteps = np.arange(0, 1356, 50, dtype=float)
+        self._control_neigbor_dict = {}
 
         # TODO make the maximum depend on max timesteps, and make type to int
         self.control_center = []
@@ -94,7 +97,9 @@ class ftleapprox(VTKPythonAlgorithmBase):
 
         a_ball = np.zeros(neighbors.shape[0])
         ftle = np.ones(neighbors.shape[0])  # shoudl the values we dont dompute be 0 ?
+        ftle[:] = np.nan
         neigborssum = np.sum(neighbors, axis=1)
+
         # only do this every xth timestep
         print("current time", current_time)
         print(f"{neighbors.shape[0]} neigbors shape")
@@ -102,50 +107,60 @@ class ftleapprox(VTKPythonAlgorithmBase):
             print("Current time is in Time Intervall")
             self._h_ball = np.zeros(neighbors.shape[0])
             for index, (point, sum) in enumerate(zip(neighbors, neigborssum)):
+                # index is the ID of the control point.
+                # TODO change point name, its confusing
                 if sum != 0:
                     h_point = [0, 0, 0]
-                    inp.GetPoint(point[self.h_index], h_point)
+                    nth_neighborID = point[
+                        self.h_index
+                    ]  # the ID of the nth neigbor (h_index). Need to save it to compare it later
+                    inp.GetPoint(nth_neighborID, h_point)
+                    self._control_neigbor_dict[index] = nth_neighborID
                     control_point = [0, 0, 0]
                     inp.GetPoint(index, control_point)
                     distance = LA.norm(np.subtract(h_point, control_point))
                     self._h_ball[index] = distance
 
         # compute A.
-        for index, (point, sum) in enumerate(zip(neighbors, neigborssum)):
-            if sum != 0:
-                print(f"{index} index")
-                a_point = [0, 0, 0]
-                inp.GetPoint(point[self.h_index], a_point)
-                control_point = [0, 0, 0]
-                inp.GetPoint(index, control_point)
-                distance = LA.norm(np.subtract(a_point, control_point))
-                a_ball[index] = distance
 
-        """
-        for index, (point, sum) in enumerate(zip(neighbors, neigborssum)):
-            if sum != 0 and current_time not in self.intervall_timesteps:
-                # this for and if loop checks if we computed the neigbors for the point in a previous filter. Such we can assing only to those an approx FTLE
-                print("Current time", current_time, "time ellapsed", time_ellapsed)
-                print("hball shape", self._h_ball.shape)
-                print("index,", index)
-                print("h ball ", self._h_ball[index])
+        debug_array = []  # holds the indexes of our nth neighbors
+        print("XDddddDDDDDDDDDDDD")
+        for key, value in self._control_neigbor_dict.items():
+            a_point = [0, 0, 0]
+            inp.GetPoint(value, a_point)
+            control_point = [0, 0, 0]
+            inp.GetPoint(key, control_point)
+            distance = LA.norm(np.subtract(a_point, control_point))
+            a_ball[key] = distance
+            print(f"key {key} and value {value}")
+            print(f" with a point  {a_point}  and controll point {control_point}")
+            print(f"distance {distance}")
 
-                print("a ball", a_ball[index])
-                x = a_ball[index] / self._h_ball[index]
-                print("x", x)
-                # TODO check if h_ball is 0
-                if time_ellapsed == 0 or self._h_ball[index] == 0:
+        for index, _ in self._control_neigbor_dict.items():
+            # this for and if loop checks if we computed the neigbors for the point in a previous filter. Such we can assing only to those an approx FTLE
+            print("Current time", current_time, "time ellapsed", time_ellapsed)
+            print("hball shape", self._h_ball.shape)
+            print("index,", key)
+            print("h ball ", self._h_ball[index])
 
-                    print("0 INciident")
-                    break
-                else:
-                    FTLE_value = (1 / time_ellapsed) * math.log(
-                        a_ball[index] / self._h_ball[index]
-                    )
-                    print("FTLE", FTLE_value)
-                    ftle[index] = FTLE_value
-        """
+            print("a ball", a_ball[index])
+            x = a_ball[index] / self._h_ball[index]
+            print("x", x)
+            # TODO check if h_ball is 0
+            if time_ellapsed == 0 or self._h_ball[index] == 0:
+                print("0 INciident")
+                break
+            else:
+                # TODO catch
+                pass
+
+                FTLE_value = (1 / time_ellapsed) * math.log(
+                    a_ball[index] / self._h_ball[index]
+                )
+                print("FTLE", FTLE_value)
+                ftle[index] = FTLE_value
+
         output.ShallowCopy(inp.VTKObject)
-        # output.PointData.append(ftle, "ftle")
+        output.PointData.append(ftle, "ftle")
 
         return 1

@@ -38,8 +38,12 @@ class centerpoint(VTKPythonAlgorithmBase):
         self._centerat0 = []
         self._time_steps = None
         self._current_time_index = 0
-        self.intervall_timesteps = np.arange(0, 1356, 50, dtype=float)
-        # TODO make the maximum depend on max timesteps
+
+        self.intervall_timesteps_length = None
+        self.intervall_timesteps = []
+        self.intervall_set_flag = False
+
+        self.cutfoff = None
         self.control_center = []
         VTKPythonAlgorithmBase.__init__(
             self,
@@ -49,9 +53,21 @@ class centerpoint(VTKPythonAlgorithmBase):
             outputType="vtkUnstructuredGrid",
         )
 
-    @smproperty.doublevector(name="XXX", default_values=10)
+    @smproperty.intvector(name="Number of Neighbors", default_values=10)
     def SetNeigborsnumber(self, neigborsnumber):
         self.neigborsnumber = neigborsnumber
+        self.Modified()
+
+    @smproperty.intvector(name="Length of Time Intervall", default_values=50)
+    def SetTimeIntervall(self, itl):
+
+        self.intervall_timesteps_length = itl
+        self.Modified()
+
+    @smproperty.doublevector(name="Cutoff", default_values=1.0)
+    def SetCutoff(self, cutoff):
+
+        self.cutoff = cutoff
         self.Modified()
 
     def RequestDataObject(self, request, inInfo, outInfo):
@@ -73,26 +89,32 @@ class centerpoint(VTKPythonAlgorithmBase):
         in_info = inInfo[0].GetInformationObject(0)
         out_info = outInfo.GetInformationObject(0)
         current_time = in_info.Get(executive.UPDATE_TIME_STEP())
-        # print("current time,", current_time)
+        max_time = in_info.Get(executive.TIME_STEPS())
+        if self.intervall_set_flag == False:
+            # TODO make the maximum depend on max timesteps
+            self.intervall_timesteps = np.arange(
+                0, 1356, self.intervall_timesteps_length, dtype=int
+            )
+            self.intervall_set_flag == True
 
         inp = dsa.WrapDataObject(vtkUnstructuredGrid.GetData(inInfo[0], 0))
         center = numpy_support.vtk_to_numpy(inp.PointData["center"])
         coordinates = numpy_support.vtk_to_numpy(inp.GetPoints())
         differences = np.zeros(center.shape[0])
-        # We want to check every 100 time steps if the points moved closer or farther away from the center point.
+        # We want to check every self.intervall_timesteps_length time steps if the points moved closer or farther away from the center point.
         # For clarifiction. Every 100 Time steps we assign a new center point and analyze this one for the next 100
         if (current_time in self.intervall_timesteps) == True:
             self.control_center = copy.deepcopy(center)
 
         # analyze the center
         for idx, (point, controlpoint) in enumerate(zip(center, self.control_center)):
-            if LA.norm(point) > 1:
-                # TODO make this cutoff variable via input
+
+            if LA.norm(point) > self.cutoff:
+                print(f"{point} point and {controlpoint} controlpoint")
                 temp_diff = LA.norm(
                     np.subtract(point, controlpoint)
                 )  # The distance between the control point and the normal point
                 differences[idx] = temp_diff
-        print("Maximum", np.amax(differences))
         output.ShallowCopy(inp.VTKObject)
         output.PointData.append(differences, "distance")
 
