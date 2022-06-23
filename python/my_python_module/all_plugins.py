@@ -5,3 +5,4 @@ from .centerpoint import *
 from .seeds import *
 from .clump import *
 from .ftleapprox import *
+from .shortestDistance import *

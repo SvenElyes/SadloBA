@@ -21,6 +21,8 @@ from .calculateLD import calculate_Langrian_descriptor
 from .util_arrays import get_array, find_array, field_from_association
 import vtk
 
+# TODO the first value in closest n neighbors is the point itself
+
 
 @smproxy.filter(label="Clump")
 # @smhint_replace_input(0)
@@ -129,6 +131,9 @@ class clump(VTKPythonAlgorithmBase):
         neighbors.SetNumberOfTuples(inp.GetNumberOfPoints())
         neighbors.SetName("neighbors")
 
+        # because we have problems with the neigbors array for values we didnt set, we introduce an array containing the boolaen information
+
+        neighbors_set = np.zeros(coordinates.shape[0])
         # Build Center Point Array. Center Point is the average of the main point and 2 of its closests neigbors.
         center = vtk.vtkPoints()
         center.SetNumberOfPoints(coordinates.shape[0])  # points_to_check.shape[0]
@@ -176,6 +181,8 @@ class clump(VTKPythonAlgorithmBase):
                 center.SetPoint(pointId, G)
                 neighbors.SetTuple(pointId, npneighbors)
 
+                neighbors_set[pointId] = 1
+
         output.ShallowCopy(inp.VTKObject)
         neighbors_np = numpy_support.vtk_to_numpy(neighbors)
         center_np = numpy_support.vtk_to_numpy(
@@ -183,6 +190,7 @@ class clump(VTKPythonAlgorithmBase):
         )  # https://stackoverflow.com/questions/5497216/convert-vtkpoints-to-numpy-array
         output.PointData.append(neighbors_np, "neighbors")
         output.PointData.append(center_np, "center")
+        output.PointData.append(neighbors_set, "neighbors_set")
         out_info.Set(vtkDataObject.DATA_TIME_STEP(), current_time)
 
         return 1
